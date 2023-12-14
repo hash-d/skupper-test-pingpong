@@ -2,9 +2,11 @@ module github.com/skupperproject/skupper-test-pingpong
 
 go 1.19
 
-replace github.com/hash-d/frame2 => /home/dhashimo/D/git/RedHat/frame2
+// replace github.com/hash-d/frame2 => /home/dhashimo/D/git/RedHat/frame2
 
-replace github.com/skupperproject/skupper => /tmp/asdf/skupper
+replace github.com/skupperproject/skupper v0.0.0-00010101000000-000000000000 => github.com/hash-d/skupper v0.0.0-00010101000000-000000000000
+
+// replace github.com/skupperproject/skupper => /tmp/asdf/skupper
 
 require (
 	github.com/hash-d/frame2 v0.0.0-00010101000000-000000000000
