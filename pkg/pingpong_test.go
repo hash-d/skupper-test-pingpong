@@ -32,6 +32,7 @@ import (
 	"github.com/hash-d/frame2/pkg/disruptors"
 	"github.com/hash-d/frame2/pkg/environment"
 	"github.com/hash-d/frame2/pkg/execute"
+	"github.com/hash-d/frame2/pkg/skupperexecute"
 	"github.com/hash-d/frame2/pkg/topology"
 	"github.com/hash-d/frame2/pkg/topology/topologies"
 	"github.com/skupperproject/skupper/test/utils/base"
@@ -137,7 +138,7 @@ func TestPingPong(t *testing.T) {
 			Runner: &r,
 			MainSteps: []frame2.Step{
 				{
-					Modify: &execute.CliSkupper{
+					Modify: &skupperexecute.CliSkupper{
 						Args:           []string{"network", "status"},
 						ClusterContext: vertex,
 						Cmd: execute.Cmd{
@@ -156,7 +157,7 @@ func TestPingPong(t *testing.T) {
 						Vertex:     vertex,
 					},
 				}, {
-					Modify: &execute.CliSkupper{
+					Modify: &skupperexecute.CliSkupper{
 						Args:           []string{"network", "status"},
 						ClusterContext: vertex,
 						Cmd: execute.Cmd{
