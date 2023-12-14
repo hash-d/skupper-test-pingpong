@@ -4,12 +4,12 @@ go 1.19
 
 // replace github.com/hash-d/frame2 => /home/dhashimo/D/git/RedHat/frame2
 
-replace github.com/skupperproject/skupper v0.0.0-00010101000000-000000000000 => github.com/hash-d/skupper v0.0.0-00010101000000-000000000000
+// replace github.com/skupperproject/skupper v0.0.0-00010101000000-000000000000 => github.com/hash-d/skupper v0.0.0-20230623180406-c90f45174ddb
 
-// replace github.com/skupperproject/skupper => /tmp/asdf/skupper
+replace github.com/skupperproject/skupper => ../skupper-dh/
 
 require (
-	github.com/hash-d/frame2 v0.0.0-00010101000000-000000000000
+	github.com/hash-d/frame2 v0.0.0-20231129200647-d24659c0aba4
 	github.com/skupperproject/skupper v0.0.0-00010101000000-000000000000
 	gotest.tools v2.2.0+incompatible
 )
