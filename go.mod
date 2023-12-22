@@ -8,8 +8,10 @@ go 1.19
 
 replace github.com/skupperproject/skupper => ../skupper-dh/
 
+//replace github.com/hash-d/frame2 => ../frame2/
+
 require (
-	github.com/hash-d/frame2 v0.0.0-20231129200647-d24659c0aba4
+	github.com/hash-d/frame2 v0.0.0-20231222122829-0f0b91060f69
 	github.com/skupperproject/skupper v0.0.0-00010101000000-000000000000
 	gotest.tools v2.2.0+incompatible
 )

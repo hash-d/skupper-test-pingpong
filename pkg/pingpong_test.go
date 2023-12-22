@@ -56,6 +56,8 @@ func TestPingPong(t *testing.T) {
 		&disruptors.UpgradeAndFinalize{},
 		&disruptors.NoConsole{},
 		&disruptors.NoFlowCollector{},
+		&disruptors.SkipManifestCheck{},
+		&disruptors.KeepWalking{},
 	})
 
 	var topologyV topology.Basic
