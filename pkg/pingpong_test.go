@@ -21,6 +21,7 @@
 package pingpong
 
 import (
+	"flag"
 	"log"
 	"os"
 	"testing"
@@ -32,14 +33,12 @@ import (
 	"github.com/hash-d/frame2/pkg/disruptors"
 	"github.com/hash-d/frame2/pkg/environment"
 	"github.com/hash-d/frame2/pkg/execute"
+	"github.com/hash-d/frame2/pkg/frames/f2k8s"
 	"github.com/hash-d/frame2/pkg/skupperexecute"
 	"github.com/hash-d/frame2/pkg/topology"
 	"github.com/hash-d/frame2/pkg/topology/topologies"
-	"github.com/skupperproject/skupper/test/utils/base"
 	"gotest.tools/assert"
 )
-
-var runner = &base.ClusterTestRunnerBase{}
 
 // Installs HelloWorld front and backend on on the left branch of a V-shaped topology, and then
 // migrates it to the right branch and back
@@ -58,13 +57,15 @@ func TestPingPong(t *testing.T) {
 		&disruptors.NoFlowCollector{},
 		&disruptors.SkipManifestCheck{},
 		&disruptors.KeepWalking{},
+		&disruptors.ConsoleAuth{},
+		&disruptors.EdgeOnPrivate{},
 	})
 
 	var topologyV topology.Basic
 	topologyV = &topologies.V{
-		Name:           "pingpong",
-		TestRunnerBase: runner,
-		EmptyRight:     true,
+		Name:       "pingpong",
+		EmptyRight: true,
+		TestBase:   f2k8s.NewTestBase("pingpong"),
 	}
 
 	setup := frame2.Phase{
@@ -85,14 +86,19 @@ func TestPingPong(t *testing.T) {
 	var topo topology.TwoBranched = topologyV.(topology.TwoBranched)
 	vertex, err := topo.GetVertex()
 	assert.Assert(t, err)
-	rightFront, err := topo.GetRight(topology.Public, 1)
+	assert.Assert(t, vertex != nil)
+	rightFront, err := topo.GetRight(f2k8s.Public, 1)
 	assert.Assert(t, err)
-	leftBack, err := topo.GetLeft(topology.Private, 1)
+	assert.Assert(t, rightFront != nil)
+	leftBack, err := topo.GetLeft(f2k8s.Private, 1)
 	assert.Assert(t, err)
-	leftFront, err := topo.GetLeft(topology.Public, 1)
+	assert.Assert(t, leftBack != nil)
+	leftFront, err := topo.GetLeft(f2k8s.Public, 1)
 	assert.Assert(t, err)
-	rightBack, err := topo.GetRight(topology.Private, 1)
+	assert.Assert(t, leftFront != nil)
+	rightBack, err := topo.GetRight(f2k8s.Private, 1)
 	assert.Assert(t, err)
+	assert.Assert(t, rightBack != nil)
 
 	monitorPhase := frame2.Phase{
 		Runner: &r,
@@ -141,8 +147,8 @@ func TestPingPong(t *testing.T) {
 			MainSteps: []frame2.Step{
 				{
 					Modify: &skupperexecute.CliSkupper{
-						Args:           []string{"network", "status"},
-						ClusterContext: vertex,
+						Args:        []string{"network", "status"},
+						F2Namespace: vertex,
 						Cmd: execute.Cmd{
 							ForceOutput: true,
 						},
@@ -160,8 +166,8 @@ func TestPingPong(t *testing.T) {
 					},
 				}, {
 					Modify: &skupperexecute.CliSkupper{
-						Args:           []string{"network", "status"},
-						ClusterContext: vertex,
+						Args:        []string{"network", "status"},
+						F2Namespace: vertex,
 						Cmd: execute.Cmd{
 							ForceOutput: true,
 						},
@@ -218,11 +224,11 @@ func TestPingPong(t *testing.T) {
 
 type MoveToRight struct {
 	Topology   topology.TwoBranched
-	Vertex     *base.ClusterContext
-	LeftFront  *base.ClusterContext
-	LeftBack   *base.ClusterContext
-	RightFront *base.ClusterContext
-	RightBack  *base.ClusterContext
+	Vertex     *f2k8s.Namespace
+	LeftFront  *f2k8s.Namespace
+	LeftBack   *f2k8s.Namespace
+	RightFront *f2k8s.Namespace
+	RightBack  *f2k8s.Namespace
 
 	frame2.DefaultRunDealer
 }
@@ -250,9 +256,9 @@ func (m *MoveToRight) Execute() error {
 				Modify: &composite.Migrate{
 					From:       m.LeftFront,
 					To:         m.RightFront,
-					LinkTo:     []*base.ClusterContext{},
-					LinkFrom:   []*base.ClusterContext{m.LeftBack, m.Vertex},
-					UnlinkFrom: []*base.ClusterContext{m.Vertex},
+					LinkTo:     []*f2k8s.Namespace{},
+					LinkFrom:   []*f2k8s.Namespace{m.LeftBack, m.Vertex},
+					UnlinkFrom: []*f2k8s.Namespace{m.Vertex},
 					DeploySteps: []frame2.Step{
 						{
 							Doc: "Deploy new HelloWorld Frontend",
@@ -268,7 +274,7 @@ func (m *MoveToRight) Execute() error {
 						{
 							Doc: "Remove the application from the old frontend namespace",
 							Modify: &execute.K8SUndeploy{
-								Name:      "hello-world-frontend",
+								Name:      "frontend",
 								Namespace: m.LeftFront,
 								Wait:      2 * time.Minute,
 							},
@@ -282,8 +288,8 @@ func (m *MoveToRight) Execute() error {
 				Modify: &composite.Migrate{
 					From:     m.LeftBack,
 					To:       m.RightBack,
-					LinkTo:   []*base.ClusterContext{m.RightFront},
-					LinkFrom: []*base.ClusterContext{},
+					LinkTo:   []*f2k8s.Namespace{m.RightFront},
+					LinkFrom: []*f2k8s.Namespace{},
 					DeploySteps: []frame2.Step{
 						{
 							Doc: "Deploy new HelloWorld Backend",
@@ -299,7 +305,7 @@ func (m *MoveToRight) Execute() error {
 						{
 							Doc: "Remove the application from the old backend namespace",
 							Modify: &execute.K8SUndeploy{
-								Name:      "hello-world-backend",
+								Name:      "backend",
 								Namespace: m.LeftBack,
 								Wait:      2 * time.Minute,
 							},
@@ -317,11 +323,11 @@ func (m *MoveToRight) Execute() error {
 
 type MoveToLeft struct {
 	Topology   topology.TwoBranched
-	Vertex     *base.ClusterContext
-	LeftFront  *base.ClusterContext
-	LeftBack   *base.ClusterContext
-	RightFront *base.ClusterContext
-	RightBack  *base.ClusterContext
+	Vertex     *f2k8s.Namespace
+	LeftFront  *f2k8s.Namespace
+	LeftBack   *f2k8s.Namespace
+	RightFront *f2k8s.Namespace
+	RightBack  *f2k8s.Namespace
 
 	frame2.DefaultRunDealer
 }
@@ -349,9 +355,9 @@ func (m *MoveToLeft) Execute() error {
 				Modify: &composite.Migrate{
 					From:       m.RightFront,
 					To:         m.LeftFront,
-					LinkTo:     []*base.ClusterContext{},
-					LinkFrom:   []*base.ClusterContext{m.RightBack, m.Vertex},
-					UnlinkFrom: []*base.ClusterContext{m.Vertex},
+					LinkTo:     []*f2k8s.Namespace{},
+					LinkFrom:   []*f2k8s.Namespace{m.RightBack, m.Vertex},
+					UnlinkFrom: []*f2k8s.Namespace{m.Vertex},
 					DeploySteps: []frame2.Step{
 						{
 							Doc: "Deploy new HelloWorld Frontend",
@@ -367,7 +373,7 @@ func (m *MoveToLeft) Execute() error {
 						{
 							Doc: "Remove the application from the old frontend namespace",
 							Modify: &execute.K8SUndeploy{
-								Name:      "hello-world-frontend",
+								Name:      "frontend",
 								Namespace: m.RightFront,
 								Wait:      2 * time.Minute,
 							},
@@ -381,8 +387,8 @@ func (m *MoveToLeft) Execute() error {
 				Modify: &composite.Migrate{
 					From:     m.RightBack,
 					To:       m.LeftBack,
-					LinkTo:   []*base.ClusterContext{m.LeftFront},
-					LinkFrom: []*base.ClusterContext{},
+					LinkTo:   []*f2k8s.Namespace{m.LeftFront},
+					LinkFrom: []*f2k8s.Namespace{},
 					DeploySteps: []frame2.Step{
 						{
 							Doc: "Deploy new HelloWorld Backend",
@@ -398,7 +404,7 @@ func (m *MoveToLeft) Execute() error {
 						{
 							Doc: "Remove the application from the old backend namespace",
 							Modify: &execute.K8SUndeploy{
-								Name:      "hello-world-backend",
+								Name:      "backend",
 								Namespace: m.RightBack,
 								Wait:      2 * time.Minute,
 							},
@@ -416,6 +422,8 @@ func (m *MoveToLeft) Execute() error {
 
 // TestMain initializes flag parsing
 func TestMain(m *testing.M) {
-	base.ParseFlags()
+	frame2.Flag()
+	f2k8s.Flag()
+	flag.Parse()
 	os.Exit(m.Run())
 }
