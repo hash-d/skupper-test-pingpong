@@ -7,7 +7,7 @@ toolchain go1.22.8
 //replace github.com/hash-d/frame2 => ../frame2/
 
 require (
-	github.com/hash-d/frame2 v0.0.0-20231222122829-0f0b91060f69
+	github.com/hash-d/frame2 v0.1.0
 	gotest.tools v2.2.0+incompatible
 )
 
